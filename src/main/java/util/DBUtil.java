@@ -68,17 +68,14 @@ public class DBUtil {
         }
 
         String password = System.getProperty("DB_PASSWORD");
-        if (password == null || password.trim().isEmpty()) {
+        if (password == null || password.isEmpty()) {
             password = System.getProperty("db.password");
         }
-        if (password == null || password.trim().isEmpty()) {
+        if (password == null || password.isEmpty()) {
             password = System.getenv("DB_PASSWORD");
         }
-
-        if (password == null || password.trim().isEmpty()) {
-            throw new DatabaseException(
-                "Database configuration error: DB_PASSWORD is missing. Please configure DB_PASSWORD via system property (-DDB_PASSWORD=...) or environment variable (DB_PASSWORD)."
-            );
+        if (password == null) {
+            password = "";
         }
 
         try {
