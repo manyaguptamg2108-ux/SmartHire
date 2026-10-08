@@ -1,0 +1,22 @@
+==================================================
+  SMART HIRE - DATABASE SETUP INSTRUCTIONS
+==================================================
+
+1. Start your MariaDB or MySQL Database Server on localhost:3306.
+2. Open your MySQL client (MySQL CLI, MySQL Workbench, DBeaver, phpMyAdmin, etc.).
+3. Execute the root `database.sql` script:
+
+   SOURCE database.sql;
+
+   Or run via command line:
+   mysql -u root -p < database.sql
+
+4. The script will:
+   - Create the `smarthire` database if it does not exist.
+   - Select `smarthire` as the active database.
+   - Create all necessary tables (`users`, `jobs`, `applications`, `interviews`, `notifications`, `companies`, `resume_profiles`, `skills`).
+   - Insert default sample data and demo accounts.
+
+5. Database Credentials Configuration:
+   Set the DB_PASSWORD environment variable or pass `-DDB_PASSWORD=your_password` when starting Tomcat / running tests.
+   Note: If MySQL connection is unavailable, SmartHire automatically falls back to an embedded H2 database for testing.
