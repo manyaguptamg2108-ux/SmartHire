@@ -20,9 +20,7 @@ public class DBUtil {
 
     private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/smarthire?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private static final String DEFAULT_USER = "root";
-
-    private static final String H2_URL = "jdbc:h2:mem:smarthire;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1";
-    private static boolean initializedH2 = false;
+    private static final String DEFAULT_PASSWORD = "SmartHire@123";
 
     static {
         try {
@@ -31,18 +29,15 @@ public class DBUtil {
         try {
             Class.forName("org.mariadb.jdbc.Driver");
         } catch (ClassNotFoundException ignored) {}
-        try {
-            Class.forName("org.h2.Driver");
-        } catch (ClassNotFoundException ignored) {}
     }
 
     private DBUtil() {}
 
     /**
-     * Obtains a new JDBC database connection.
+     * Obtains a new JDBC database connection to MariaDB / MySQL.
      *
      * @return active Connection object
-     * @throws DatabaseException if connection establishment fails or password configuration is missing
+     * @throws DatabaseException if connection establishment fails
      */
     public static Connection getConnection() throws DatabaseException {
         String url = System.getProperty("DB_URL");
@@ -68,33 +63,20 @@ public class DBUtil {
         }
 
         String password = System.getProperty("DB_PASSWORD");
-        if (password == null || password.isEmpty()) {
+        if (password == null || password.isEmpty() || password.contains("YOUR_")) {
             password = System.getProperty("db.password");
         }
-        if (password == null || password.isEmpty()) {
+        if (password == null || password.isEmpty() || password.contains("YOUR_")) {
             password = System.getenv("DB_PASSWORD");
         }
-        if (password == null) {
-            password = "";
+        if (password == null || password.isEmpty() || password.contains("YOUR_")) {
+            password = DEFAULT_PASSWORD;
         }
 
         try {
             return DriverManager.getConnection(url, user, password);
         } catch (Exception e) {
-            // Fallback to H2 in-memory database if MySQL/MariaDB host connection fails
-            try {
-                Class.forName("org.h2.Driver");
-                Connection conn = DriverManager.getConnection(H2_URL, "sa", "");
-                synchronized (DBUtil.class) {
-                    if (!initializedH2) {
-                        initH2Schema(conn);
-                        initializedH2 = true;
-                    }
-                }
-                return conn;
-            } catch (Exception h2Err) {
-                throw new DatabaseException("Failed to establish JDBC Connection to " + url + " as user " + user, e);
-            }
+            throw new DatabaseException("Failed to establish JDBC Connection to " + url + " as user " + user + ": " + e.getMessage(), e);
         }
     }
 
