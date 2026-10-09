@@ -66,9 +66,16 @@ public class JobSeekerDAO implements JobSeekerDAOInterface {
 
     @Override
     public boolean save(JobSeeker seeker) throws DatabaseException {
+        try (Connection conn = DBUtil.getConnection()) {
+            return save(seeker, conn);
+        } catch (SQLException e) {
+            throw new DatabaseException("Error saving JobSeeker profile", e);
+        }
+    }
+
+    public boolean save(JobSeeker seeker, Connection conn) throws DatabaseException {
         String sql = "INSERT INTO job_seekers (user_id, phone, education, experience, location, bio, resume_path, profile_completion) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, seeker.getId());
             stmt.setString(2, seeker.getPhone());
             stmt.setString(3, seeker.getEducation());

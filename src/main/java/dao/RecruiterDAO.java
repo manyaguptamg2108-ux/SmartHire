@@ -66,9 +66,16 @@ public class RecruiterDAO implements RecruiterDAOInterface {
 
     @Override
     public boolean save(Recruiter recruiter) throws DatabaseException {
+        try (Connection conn = DBUtil.getConnection()) {
+            return save(recruiter, conn);
+        } catch (SQLException e) {
+            throw new DatabaseException("Error saving Recruiter profile", e);
+        }
+    }
+
+    public boolean save(Recruiter recruiter, Connection conn) throws DatabaseException {
         String sql = "INSERT INTO recruiters (user_id, phone, designation) VALUES (?, ?, ?)";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, recruiter.getId());
             stmt.setString(2, recruiter.getPhone());
             stmt.setString(3, recruiter.getDesignation());

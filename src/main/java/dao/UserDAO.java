@@ -73,9 +73,16 @@ public class UserDAO implements UserDAOInterface {
 
     @Override
     public boolean save(User user) throws DatabaseException {
+        try (Connection conn = DBUtil.getConnection()) {
+            return save(user, conn);
+        } catch (SQLException e) {
+            throw new DatabaseException("Error saving user: " + user.getEmail(), e);
+        }
+    }
+
+    public boolean save(User user, Connection conn) throws DatabaseException {
         String sql = "INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, user.getName());
             stmt.setString(2, user.getEmail());
             stmt.setString(3, user.getPasswordHash());

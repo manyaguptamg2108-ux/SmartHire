@@ -63,13 +63,24 @@ public class DBUtil {
         }
 
         String password = System.getProperty("DB_PASSWORD");
-        if (password == null || password.isEmpty() || password.contains("YOUR_")) {
+        if (password == null || password.isEmpty()) {
             password = System.getProperty("db.password");
         }
-        if (password == null || password.isEmpty() || password.contains("YOUR_")) {
+        if (password == null || password.isEmpty()) {
             password = System.getenv("DB_PASSWORD");
         }
-        if (password == null || password.isEmpty() || password.contains("YOUR_")) {
+        if (password == null || password.isEmpty()) {
+            password = System.getenv("db.password");
+        }
+
+        if (password != null && !password.isEmpty()) {
+            String upper = password.toUpperCase();
+            if (upper.contains("YOUR_ACTUAL_PASSWORD") || upper.contains("YOUR_REAL_PASSWORD") 
+                    || upper.contains("YOUR_NEW_PASSWORD") || upper.contains("YOUR_PASSWORD") 
+                    || upper.contains("YOUR_")) {
+                throw new DatabaseException("Database configuration error: DB_PASSWORD environment variable or system property contains an unconfigured placeholder value. Please set a valid database password.");
+            }
+        } else {
             password = DEFAULT_PASSWORD;
         }
 

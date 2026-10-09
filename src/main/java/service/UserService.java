@@ -7,8 +7,11 @@ import exception.InvalidUserException;
 import model.*;
 import model.enums.UserRole;
 import model.enums.UserStatus;
+import util.DBUtil;
 import util.PasswordUtil;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -115,21 +118,62 @@ public class UserService {
                     "", "");
         }
 
-        boolean saved = userDAO.save(user);
-        if (saved) {
-            // Also initialize profile row in corresponding DAO table
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+
+            boolean userSaved;
+            if (userDAO instanceof UserDAO) {
+                userSaved = ((UserDAO) userDAO).save(user, conn);
+            } else {
+                userSaved = userDAO.save(user);
+            }
+
+            if (!userSaved || user.getId() <= 0) {
+                conn.rollback();
+                return false;
+            }
+
+            boolean profileSaved = true;
             if (role == UserRole.JOB_SEEKER && user instanceof JobSeeker) {
-                try {
-                    jobSeekerDAO.save((JobSeeker) user);
-                } catch (Exception ignored) {}
+                if (jobSeekerDAO instanceof JobSeekerDAO) {
+                    profileSaved = ((JobSeekerDAO) jobSeekerDAO).save((JobSeeker) user, conn);
+                } else {
+                    profileSaved = jobSeekerDAO.save((JobSeeker) user);
+                }
             } else if (role == UserRole.RECRUITER && user instanceof Recruiter) {
+                if (recruiterDAO instanceof RecruiterDAO) {
+                    profileSaved = ((RecruiterDAO) recruiterDAO).save((Recruiter) user, conn);
+                } else {
+                    profileSaved = recruiterDAO.save((Recruiter) user);
+                }
+            }
+
+            if (!profileSaved) {
+                conn.rollback();
+                return false;
+            }
+
+            conn.commit();
+            return true;
+
+        } catch (Exception e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
+            if (e instanceof DatabaseException) {
+                throw (DatabaseException) e;
+            }
+            throw new DatabaseException("Error registering user: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
                 try {
-                    recruiterDAO.save((Recruiter) user);
-                } catch (Exception ignored) {}
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException ignored) {}
             }
         }
-
-        return saved;
     }
 
     public boolean registerUser(User user) throws InvalidUserException, DatabaseException {
